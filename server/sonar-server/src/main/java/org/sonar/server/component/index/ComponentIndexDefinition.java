@@ -23,7 +23,9 @@ import org.sonar.api.config.Settings;
 import org.sonar.server.es.IndexDefinition;
 import org.sonar.server.es.NewIndex;
 
+import static org.sonar.server.es.DefaultIndexSettingsElement.SEARCH_CAMEL_CASE_ANALYZER;
 import static org.sonar.server.es.DefaultIndexSettingsElement.SEARCH_GRAMS_ANALYZER;
+import static org.sonar.server.es.DefaultIndexSettingsElement.SINGLE_CHARACTER_PREFIX_ANALYZER;
 import static org.sonar.server.es.DefaultIndexSettingsElement.SORTABLE_ANALYZER;
 
 public class ComponentIndexDefinition implements IndexDefinition {
@@ -55,7 +57,7 @@ public class ComponentIndexDefinition implements IndexDefinition {
 
     mapping.stringFieldBuilder(FIELD_PROJECT_UUID).build();
     mapping.stringFieldBuilder(FIELD_KEY).enable(SORTABLE_ANALYZER).build();
-    mapping.stringFieldBuilder(FIELD_NAME).enable(SORTABLE_ANALYZER, SEARCH_GRAMS_ANALYZER).build();
+    mapping.stringFieldBuilder(FIELD_NAME).enable(SORTABLE_ANALYZER, SEARCH_GRAMS_ANALYZER, SEARCH_CAMEL_CASE_ANALYZER).build();
     mapping.stringFieldBuilder(FIELD_QUALIFIER).build();
     mapping.setEnableSource(false);
   }

@@ -30,11 +30,14 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.sonar.server.es.DefaultIndexSettings;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchPhraseQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.sonar.server.component.index.ComponentIndexDefinition.FIELD_KEY;
 import static org.sonar.server.component.index.ComponentIndexDefinition.FIELD_NAME;
+import static org.sonar.server.es.DefaultIndexSettingsElement.SEARCH_CAMEL_CASE_ANALYZER;
 import static org.sonar.server.es.DefaultIndexSettingsElement.SEARCH_GRAMS_ANALYZER;
+import static org.sonar.server.es.DefaultIndexSettingsElement.SINGLE_CHARACTER_PREFIX_ANALYZER;
 import static org.sonar.server.es.DefaultIndexSettingsElement.SORTABLE_ANALYZER;
 
 public enum ComponentIndexSearchFeature {
@@ -63,6 +66,20 @@ public enum ComponentIndexSearchFeature {
         .forEach(query::must);
       return query
         .boost(0.5f);
+    }
+  },
+  CAMEL_CASE {
+    @Override
+    public QueryBuilder getQuery(String queryText) {
+      return boolQuery()
+
+        // let PE find NullPointerException, but with a weak score
+        .should(matchPhraseQuery(SEARCH_CAMEL_CASE_ANALYZER.subField(FIELD_NAME), queryText).boost(0.2f))
+
+        // let NPE find NullPointerException
+        .should(boolQuery()
+          .must(matchPhraseQuery(SEARCH_CAMEL_CASE_ANALYZER.subField(FIELD_NAME), queryText))
+          .must(prefixQuery(SINGLE_CHARACTER_PREFIX_ANALYZER.subField(FIELD_NAME), queryText)));
     }
   },
   KEY {

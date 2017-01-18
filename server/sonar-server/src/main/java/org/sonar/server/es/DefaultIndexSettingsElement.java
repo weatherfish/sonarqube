@@ -78,6 +78,14 @@ public enum DefaultIndexSettingsElement {
       set(MAX_GRAM, 15);
     }
   },
+  SINGLE_CHARACTER_PREFIX_FILTER(FILTER) {
+
+    @Override
+    protected void setup() {
+      set(TYPE, TRUNCATE);
+      set(LENGTH, 1);
+    }
+  },
 
   // Tokenizers
 
@@ -97,6 +105,14 @@ public enum DefaultIndexSettingsElement {
     protected void setup() {
       set(TYPE, PATTERN);
       set(PATTERN, "\\.");
+    }
+  },
+  CAMEL_CASE_TOKENIZER(TOKENIZER) {
+
+    @Override
+    protected void setup() {
+      set(TYPE, PATTERN);
+      set(PATTERN, "(?=[\\p{Lu}\\d])");
     }
   },
 
@@ -190,6 +206,46 @@ public enum DefaultIndexSettingsElement {
     protected void setup() {
       set(TOKENIZER, UUID_MODULE_TOKENIZER);
       setArray(FILTER, TRIM);
+    }
+  },
+  INDEX_CAMEL_CASE_ANALYZER(ANALYZER) {
+
+    @Override
+    protected void setup() {
+      set(TOKENIZER, CAMEL_CASE_TOKENIZER);
+      setArray(FILTER, EDGE_NGRAM_FILTER);
+    }
+  },
+  SEARCH_CAMEL_CASE_ANALYZER(ANALYZER) {
+
+    @Override
+    protected void setup() {
+      set(TOKENIZER, CAMEL_CASE_TOKENIZER);
+    }
+
+    @Override
+    public SortedMap<String, String> fieldMapping() {
+      return ImmutableSortedMap.of(
+        TYPE, STRING,
+        INDEX, ANALYZED,
+        ANALYZER, INDEX_CAMEL_CASE_ANALYZER.getName(),
+        SEARCH_ANALYZER, getName());
+    }
+  },
+  SINGLE_CHARACTER_PREFIX_ANALYZER(ANALYZER) {
+
+    @Override
+    protected void setup() {
+      set(TOKENIZER, KEYWORD);
+      setArray(FILTER, SINGLE_CHARACTER_PREFIX_FILTER.getName());
+    }
+
+    @Override
+    public SortedMap<String, String> fieldMapping() {
+      return ImmutableSortedMap.of(
+        TYPE, STRING,
+        INDEX, ANALYZED,
+        ANALYZER, getName());
     }
   },
 
