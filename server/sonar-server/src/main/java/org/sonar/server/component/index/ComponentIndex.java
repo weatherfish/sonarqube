@@ -59,12 +59,12 @@ public class ComponentIndex {
     this.authorizationTypeSupport = authorizationTypeSupport;
   }
 
-  public List<ComponentsPerQualifier> search(ComponentIndexQuery query) {
+  public List<ComponentHitsPerQualifier> search(ComponentIndexQuery query) {
     return search(query, ComponentIndexSearchFeature.values());
   }
 
   @VisibleForTesting
-  List<ComponentsPerQualifier> search(ComponentIndexQuery query, ComponentIndexSearchFeature... features) {
+  List<ComponentHitsPerQualifier> search(ComponentIndexQuery query, ComponentIndexSearchFeature... features) {
     Collection<String> qualifiers = query.getQualifiers();
     if (qualifiers.isEmpty()) {
       return Collections.emptyList();
@@ -113,7 +113,7 @@ public class ComponentIndex {
     return esQuery.must(featureQuery);
   }
 
-  private static List<ComponentsPerQualifier> aggregationsToQualifiers(SearchResponse response) {
+  private static List<ComponentHitsPerQualifier> aggregationsToQualifiers(SearchResponse response) {
     InternalFilters filtersAgg = response.getAggregations().get(FILTERS_AGGREGATION_NAME);
     List<Bucket> buckets = filtersAgg.getBuckets();
     return buckets.stream()
@@ -121,15 +121,12 @@ public class ComponentIndex {
       .collect(Collectors.toList(buckets.size()));
   }
 
-  private static ComponentsPerQualifier bucketToQualifier(Bucket bucket) {
+  private static ComponentHitsPerQualifier bucketToQualifier(Bucket bucket) {
     InternalTopHits docs = bucket.getAggregations().get(DOCS_AGGREGATION_NAME);
 
     SearchHits hitList = docs.getHits();
     SearchHit[] hits = hitList.getHits();
 
-    List<String> componentUuids = Arrays.stream(hits).map(SearchHit::getId)
-      .collect(Collectors.toList(hits.length));
-
-    return new ComponentsPerQualifier(bucket.getKey(), componentUuids, hitList.totalHits());
+    return new ComponentHitsPerQualifier(bucket.getKey(), ComponentHit.fromSearchHits(hits), hitList.totalHits());
   }
 }
