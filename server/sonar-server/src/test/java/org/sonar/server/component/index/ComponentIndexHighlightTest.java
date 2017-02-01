@@ -22,6 +22,7 @@ package org.sonar.server.component.index;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.sonar.api.resources.Qualifiers;
 
@@ -30,13 +31,45 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ComponentIndexHighlightTest extends ComponentIndexTest {
 
   @Test
-  public void should_highlight_prefix() {
+  public void should_highlight_word() {
     assertHighlighting("quick brown fox", "brown", "quick <em>brown</em> fox");
   }
 
   @Test
   public void should_escape_html() {
     assertHighlighting("quick< brown fox", "brown", "quick&lt; <em>brown</em> fox");
+  }
+
+  @Test
+  public void should_highlight_partial_name() {
+    assertHighlighting("quickbrownfox", "brown", "quick<em>brown</em>fox");
+  }
+
+  @Ignore
+  @Test
+  public void should_highlight_prefix() {
+    assertHighlighting("quickbrownfox", "quick", "<em>quick</em>brownfox");
+  }
+
+  @Test
+  public void should_highlight_suffix() {
+    assertHighlighting("quickbrownfox", "fox", "quickbrown<em>fox</em>");
+  }
+
+  @Test
+  public void should_highlight_multiple_words() {
+    assertHighlighting("quickbrownfox", "fox bro", "quick<em>bro</em>wn<em>fox</em>");
+  }
+
+  @Test
+  public void should_highlight_multiple_connected_words() {
+    assertHighlighting("quickbrownfox", "fox brown", "quick<em>brownfox</em>");
+  }
+
+  @Ignore
+  @Test
+  public void should_highlight_partial_file_name() {
+    assertHighlighting("Command.java", "Com", "<em>Com</em>mand.java");
   }
 
   private void assertHighlighting(String fileName, String search, String expectedHighlighting) {

@@ -35,8 +35,8 @@ import org.sonar.server.es.EsTester;
 import org.sonar.server.permission.index.AuthorizationTypeSupport;
 import org.sonar.server.permission.index.PermissionIndexerTester;
 import org.sonar.server.tester.UserSessionRule;
-import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsComponents.SuggestionsWsResponse;
+import org.sonarqube.ws.WsComponents.SuggestionsWsResponse.ComponentSearchResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -81,7 +81,7 @@ public class SuggestionsActionTest {
     // assert correct id to be found
     assertThat(response.getResultsList())
       .flatExtracting(SuggestionsWsResponse.Qualifier::getItemsList)
-      .extracting(WsComponents.Component::getKey, WsComponents.Component::getOrganization)
+      .extracting(ComponentSearchResult::getKey, ComponentSearchResult::getOrganization)
       .containsExactly(tuple(project.getKey(), organization.getKey()));
   }
 

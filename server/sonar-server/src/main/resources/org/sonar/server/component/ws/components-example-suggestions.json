@@ -1,60 +1,94 @@
 {
-  "results": [
+  "results":[
     {
-      "q": "TRK",
-      "items": [
+      "q":"VW",
+      "items":[
+
+      ]
+    },
+    {
+      "q":"SVW",
+      "items":[
+
+      ]
+    },
+    {
+      "q":"TRK",
+      "items":[
         {
-          "id": 2865,
-          "name": "SonarQube"
-        },
-        {
-          "id": 13265,
-          "name": "SonarQube Java"
-        },
-        {
-          "id": 17226,
-          "name": "SonarQube Runner"
-        },
-        {
-          "id": 12916,
-          "name": "SonarQube C# Plugin"
-        },
-        {
-          "id": 15021,
-          "name": "SonarQube PMD Plugin"
-        },
-        {
-          "id": 5537,
-          "name": "SonarQube Web Plugin"
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonarqube",
+          "name":"SonarQube",
+          "highlightedText":"<em>Sonar</em>Qube"
         }
       ]
     },
     {
-      "q": "BRC",
-      "items": [
+      "q":"BRC",
+      "items":[
         {
-          "id": 17221,
-          "name": "SonarQube :: Home"
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-web",
+          "name":"SonarQube :: Web",
+          "highlightedText":"<em>Sonar</em>Qube :: Web"
         },
         {
-          "id": 258,
-          "name": "SonarQube :: Core"
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-search",
+          "name":"SonarQube :: Search",
+          "highlightedText":"<em>Sonar</em>Qube :: Search"
         },
         {
-          "id": 1624,
-          "name": "SonarQube :: Batch"
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-process",
+          "name":"SonarQube :: Process",
+          "highlightedText":"<em>Sonar</em>Qube :: Process"
         },
         {
-          "id": 21,
-          "name": "SonarQube :: Graph"
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-check-api",
+          "name":"SonarQube :: Check API",
+          "highlightedText":"<em>Sonar</em>Qube :: Check API"
         },
         {
-          "id": 2872,
-          "name": "SonarQube :: Server"
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-core",
+          "name":"SonarQube :: Core",
+          "highlightedText":"<em>Sonar</em>Qube :: Core"
         },
         {
-          "id": 2869,
-          "name": "SonarQube :: Markdown"
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-server",
+          "name":"SonarQube :: Server",
+          "highlightedText":"<em>Sonar</em>Qube :: Server"
+        }
+      ]
+    },
+    {
+      "q":"FIL",
+      "items":[
+        {
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-plugin-api:src/main/java/org/sonar/api/utils/SonarException.java",
+          "name":"src/main/java/org/sonar/api/utils/SonarException.java",
+          "highlightedText":"<em>Sonar</em>Exception.java"
+        },
+        {
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-plugin-api:src/main/java/org/sonarsource/api/sonarlint/SonarLintSide.java",
+          "name":"src/main/java/org/sonarsource/api/sonarlint/SonarLintSide.java",
+          "highlightedText":"<em>Sonar</em>LintSide.java"
+        }
+      ]
+    },
+    {
+      "q":"UTS",
+      "items":[
+        {
+          "organization":"default-organization",
+          "key":"org.sonarsource.sonarqube:sonar-plugin-api:src/test/java/org/sonar/api/SonarQubeVersionTest.java",
+          "name":"src/test/java/org/sonar/api/SonarQubeVersionTest.java",
+          "highlightedText":"<em>Sonar</em>QubeVersionTest.java"
         }
       ]
     }

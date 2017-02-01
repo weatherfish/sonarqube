@@ -19,27 +19,28 @@
  */
 package org.sonar.server.component.ws;
 
-import com.google.common.collect.Ordering;
 import com.google.common.io.Resources;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.api.server.ws.WebService.NewAction;
-import org.sonar.core.util.stream.Collectors;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
+import org.sonar.server.component.index.ComponentHit;
 import org.sonar.server.component.index.ComponentHitsPerQualifier;
 import org.sonar.server.component.index.ComponentIndex;
 import org.sonar.server.component.index.ComponentIndexQuery;
-import org.sonarqube.ws.WsComponents.Component;
 import org.sonarqube.ws.WsComponents.SuggestionsWsResponse;
+import org.sonarqube.ws.WsComponents.SuggestionsWsResponse.ComponentSearchResult;
 import org.sonarqube.ws.WsComponents.SuggestionsWsResponse.Qualifier;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -73,7 +74,15 @@ public class SuggestionsAction implements ComponentsWsAction {
   @Override
   public void define(WebService.NewController context) {
     NewAction action = context.createAction(ACTION_SUGGESTIONS)
-      .setDescription("Internal WS for the top-right search engine")
+      .setDescription(
+        "Internal WS for the top-right search engine. The result will contain component search results, grouped by their qualifiers.<p>"
+          + "Each result contains:"
+          + "<ul>"
+          + "<li>the organization key</li>"
+          + "<li>the component key</li>"
+          + "<li>the component's name (unescaped)</li>"
+          + "<li>optionally a display name, which puts emphasis to matching characters (this text contains html tags and parts of the html-escaped name)</li>"
+          + "</ul>")
       .setSince("4.2")
       .setInternal(true)
       .setHandler(this)
@@ -92,69 +101,93 @@ public class SuggestionsAction implements ComponentsWsAction {
   }
 
   SuggestionsWsResponse doHandle(String query) {
-    List<Qualifier> resultsPerQualifier = getResultsOfAllQualifiers(query);
+    List<ComponentHitsPerQualifier> results = searchInIndex(query);
+    return createResponse(results);
+  }
 
+  private List<ComponentHitsPerQualifier> searchInIndex(String query) {
+    return index.search(
+      new ComponentIndexQuery(query)
+        .setQualifiers(Arrays.asList(QUALIFIERS))
+        .setLimit(NUMBER_OF_RESULTS_PER_QUALIFIER));
+  }
+
+  private SuggestionsWsResponse createResponse(List<ComponentHitsPerQualifier> hits) {
     return SuggestionsWsResponse.newBuilder()
-      .addAllResults(resultsPerQualifier)
+      .addAllResults(createQualifiers(hits))
       .build();
   }
 
-  private List<Qualifier> getResultsOfAllQualifiers(String query) {
-    ComponentIndexQuery componentIndexQuery = new ComponentIndexQuery(query)
-      .setQualifiers(Arrays.asList(QUALIFIERS))
-      .setLimit(NUMBER_OF_RESULTS_PER_QUALIFIER);
+  private List<Qualifier> createQualifiers(List<ComponentHitsPerQualifier> componentsPerQualifiers) {
 
-    List<ComponentHitsPerQualifier> componentsPerQualifiers = searchInIndex(componentIndexQuery);
-
-    if (componentsPerQualifiers.isEmpty()) {
-      return Collections.emptyList();
-    }
-
-    try (DbSession dbSession = dbClient.openSession(false)) {
-      return componentsPerQualifiers.stream().map(qualifier -> {
-
-        List<String> uuids = qualifier.getComponentUuids();
-        List<ComponentDto> componentDtos = dbClient.componentDao().selectByUuids(dbSession, uuids);
-        List<ComponentDto> sortedComponentDtos = Ordering.explicit(uuids)
-          .onResultOf(ComponentDto::uuid)
-          .immutableSortedCopy(componentDtos);
-
-        Map<String, String> organizationKeyByUuids = getOrganizationKeys(dbSession, componentDtos);
-
-        List<Component> results = sortedComponentDtos
-          .stream()
-          .map(dto -> dtoToComponent(dto, organizationKeyByUuids))
-          .collect(Collectors.toList());
-
-        return Qualifier.newBuilder()
-          .setQ(qualifier.getQualifier())
-          .addAllItems(results)
-          .build();
-      }).collect(Collectors.toList());
-    }
-
-  }
-
-  private Map<String, String> getOrganizationKeys(DbSession dbSession, List<ComponentDto> componentDtos) {
-    return dbClient.organizationDao().selectByUuids(
-      dbSession,
-      componentDtos.stream().map(ComponentDto::getOrganizationUuid).collect(Collectors.toSet()))
+    // load all relevant components from database (in a single request)
+    Set<String> componentUuids = componentsPerQualifiers
       .stream()
-      .collect(Collectors.uniqueIndex(OrganizationDto::getUuid, OrganizationDto::getKey));
+      .flatMap(q -> q.getHits().stream())
+      .map(ComponentHit::getUuid)
+      .collect(Collectors.toSet());
+    Map<String, ComponentDto> componentDtoByUuid = getComponentDtos(componentUuids);
+
+    // load all relevant organizations from database (in a single request)
+    Set<String> organizationUuids = componentDtoByUuid
+      .values()
+      .stream()
+      .map(ComponentDto::getOrganizationUuid)
+      .collect(Collectors.toSet());
+    Map<String, OrganizationDto> organizationDtoByUuid = getOrganizationDtos(organizationUuids);
+
+    return componentsPerQualifiers.stream()
+      .map(hitsPerQualifier -> createItems(hitsPerQualifier, componentDtoByUuid, organizationDtoByUuid))
+      .collect(Collectors.toList());
   }
 
-  private List<ComponentHitsPerQualifier> searchInIndex(ComponentIndexQuery componentIndexQuery) {
-    return index.search(componentIndexQuery);
+  private Map<String, ComponentDto> getComponentDtos(Set<String> componentUuids) {
+    List<ComponentDto> componentDtos;
+    try (DbSession dbSession = dbClient.openSession(false)) {
+      componentDtos = dbClient.componentDao().selectByUuids(dbSession, componentUuids);
+    }
+    return componentDtos.stream().collect(Collectors.toMap(ComponentDto::uuid, Function.identity()));
   }
 
-  private static Component dtoToComponent(ComponentDto result, Map<String, String> organizationKeysByUuid) {
-    String organizationKey = organizationKeysByUuid.get(result.getOrganizationUuid());
-    checkState(organizationKey != null, "Organization with uuid '%s' not found", result.getOrganizationUuid());
-    return Component.newBuilder()
-      .setOrganization(organizationKey)
-      .setKey(result.getKey())
-      .setName(result.longName())
+  private Map<String, OrganizationDto> getOrganizationDtos(Set<String> organizationUuids) {
+    List<OrganizationDto> organizationDtos;
+    try (DbSession dbSession = dbClient.openSession(false)) {
+      organizationDtos = dbClient.organizationDao().selectByUuids(dbSession, organizationUuids);
+    }
+    return organizationDtos.stream().collect(Collectors.toMap(OrganizationDto::getUuid, Function.identity()));
+  }
+
+  private static Qualifier createItems(ComponentHitsPerQualifier hitsPerQualifier, Map<String, ComponentDto> componentDtoByUuid,
+    Map<String, OrganizationDto> organizationDtoByUuid) {
+    List<ComponentSearchResult> items = hitsPerQualifier.getHits()
+      .stream()
+      .map(hit -> createItem(hit, componentDtoByUuid, organizationDtoByUuid))
+      .collect(Collectors.toList());
+
+    return Qualifier.newBuilder()
+      .setQ(hitsPerQualifier.getQualifier())
+      .addAllItems(items)
       .build();
   }
 
+  private static ComponentSearchResult createItem(ComponentHit hit, Map<String, ComponentDto> componentDtoByUuid, Map<String, OrganizationDto> organizationDtoByUuid) {
+    String componentUuid = hit.getUuid();
+    ComponentDto componentDto = componentDtoByUuid.get(componentUuid);
+    checkState(componentDto != null, "Component with uuid '%s' found in index, but not found in database", componentDto);
+
+    String organizationUuid = componentDto.getOrganizationUuid();
+    OrganizationDto organizationDto = organizationDtoByUuid.get(organizationUuid);
+    checkState(organizationDto != null, "Organization with uuid '%s' not found", organizationUuid);
+
+    return createItem(hit, componentDto, organizationDto);
+  }
+
+  private static ComponentSearchResult createItem(ComponentHit hit, ComponentDto componentDto, OrganizationDto organizationDto) {
+    ComponentSearchResult.Builder resultBuilder = ComponentSearchResult.newBuilder()
+      .setOrganization(organizationDto.getKey())
+      .setKey(componentDto.getKey())
+      .setName(componentDto.longName());
+    hit.getHighlightedText().ifPresent(resultBuilder::setHighlightedText);
+    return resultBuilder.build();
+  }
 }
