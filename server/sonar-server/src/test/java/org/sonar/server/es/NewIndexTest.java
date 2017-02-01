@@ -95,7 +95,6 @@ public class NewIndexTest {
     mapping.stringFieldBuilder("basic_field").build();
     mapping.stringFieldBuilder("not_searchable_field").disableSearch().build();
     mapping.stringFieldBuilder("all_capabilities_field")
-      .enableGramSearch()
       .enableWordSearch()
       .enableSorting()
       .build();

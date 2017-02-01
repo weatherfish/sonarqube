@@ -20,6 +20,7 @@
 package org.sonar.server.component.index;
 
 import org.sonar.api.config.Settings;
+import org.sonar.server.es.DefaultIndexSettingsElement;
 import org.sonar.server.es.IndexDefinition;
 import org.sonar.server.es.NewIndex;
 
@@ -38,6 +39,8 @@ public class ComponentIndexDefinition implements IndexDefinition {
 
   private static final int DEFAULT_NUMBER_OF_SHARDS = 5;
 
+  static final DefaultIndexSettingsElement[] NAME_ANALYZERS = {SORTABLE_ANALYZER, SEARCH_GRAMS_ANALYZER};
+
   private final Settings settings;
 
   public ComponentIndexDefinition(Settings settings) {
@@ -55,8 +58,11 @@ public class ComponentIndexDefinition implements IndexDefinition {
 
     mapping.stringFieldBuilder(FIELD_PROJECT_UUID).build();
     mapping.stringFieldBuilder(FIELD_KEY).enable(SORTABLE_ANALYZER).build();
-    mapping.stringFieldBuilder(FIELD_NAME).enable(SORTABLE_ANALYZER, SEARCH_GRAMS_ANALYZER).build();
+    mapping.stringFieldBuilder(FIELD_NAME)
+      .termVectorWithPositionOffsets()
+      .enable(NAME_ANALYZERS)
+      .build();
+
     mapping.stringFieldBuilder(FIELD_QUALIFIER).build();
-    mapping.setEnableSource(false);
   }
 }

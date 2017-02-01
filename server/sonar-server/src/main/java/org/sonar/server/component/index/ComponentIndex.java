@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -36,14 +37,17 @@ import org.elasticsearch.search.aggregations.bucket.filters.InternalFilters;
 import org.elasticsearch.search.aggregations.bucket.filters.InternalFilters.Bucket;
 import org.elasticsearch.search.aggregations.metrics.tophits.InternalTopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
+import org.elasticsearch.search.highlight.HighlightBuilder;
 import org.sonar.core.util.stream.Collectors;
 import org.sonar.server.es.EsClient;
 import org.sonar.server.permission.index.AuthorizationTypeSupport;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.sonar.server.component.index.ComponentIndexDefinition.FIELD_NAME;
 import static org.sonar.server.component.index.ComponentIndexDefinition.FIELD_QUALIFIER;
 import static org.sonar.server.component.index.ComponentIndexDefinition.INDEX_COMPONENTS;
+import static org.sonar.server.component.index.ComponentIndexDefinition.NAME_ANALYZERS;
 import static org.sonar.server.component.index.ComponentIndexDefinition.TYPE_COMPONENT;
 
 public class ComponentIndex {
@@ -95,7 +99,9 @@ public class ComponentIndex {
   }
 
   private static TopHitsBuilder createSubAggregation(ComponentIndexQuery query) {
-    TopHitsBuilder sub = AggregationBuilders.topHits(DOCS_AGGREGATION_NAME);
+    TopHitsBuilder sub = AggregationBuilders.topHits(DOCS_AGGREGATION_NAME)
+      .setHighlighterEncoder("html")
+      .addHighlightedField(createHighlighter());
     query.getLimit().ifPresent(sub::setSize);
     return sub.setFetchSource(false);
   }
@@ -111,6 +117,19 @@ public class ComponentIndex {
       .forEach(featureQuery::should);
 
     return esQuery.must(featureQuery);
+  }
+
+  private static HighlightBuilder.Field createHighlighter() {
+    HighlightBuilder.Field field = new HighlightBuilder.Field(FIELD_NAME);
+    field.highlighterType("fvh");
+    field.matchedFields(
+      Stream.concat(
+        Stream.of(FIELD_NAME),
+        Arrays
+          .stream(NAME_ANALYZERS)
+          .map(a -> a.subField(FIELD_NAME)))
+        .toArray(String[]::new));
+    return field;
   }
 
   private static List<ComponentHitsPerQualifier> aggregationsToQualifiers(SearchResponse response) {

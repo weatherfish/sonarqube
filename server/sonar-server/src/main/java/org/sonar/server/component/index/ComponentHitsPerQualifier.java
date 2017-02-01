@@ -42,6 +42,10 @@ public class ComponentHitsPerQualifier {
     return hits.stream().map(ComponentHit::getUuid).collect(Collectors.toList(hits.size()));
   }
 
+  public List<ComponentHit> getHits() {
+    return hits;
+  }
+
   public long getTotalHits() {
     return totalHits;
   }
