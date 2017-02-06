@@ -1,0 +1,11 @@
+<profile>
+  <name>one-rule</name>
+  <language>xoo</language>
+  <rules>
+    <rule>
+      <repositoryKey>xoo</repositoryKey>
+      <key>OneIssuePerFile</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
