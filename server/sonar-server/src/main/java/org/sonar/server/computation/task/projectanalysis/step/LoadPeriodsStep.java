@@ -44,7 +44,7 @@ import static org.sonar.server.computation.task.projectanalysis.component.Crawle
  * Populates the {@link org.sonar.server.computation.task.projectanalysis.period.PeriodsHolder}
  * <p/>
  * Here is how these periods are computed :
- * - Read the 5 period properties ${@link org.sonar.core.config.CorePropertyDefinitions#TIMEMACHINE_PERIOD_PREFIX}
+ * - Read the 5 period properties ${@link org.sonar.core.config.CorePropertyDefinitions#LEAK_PERIOD}
  * - Try to find the matching snapshots from the properties
  * - If a snapshot is found, a new period is added to the repository
  */
