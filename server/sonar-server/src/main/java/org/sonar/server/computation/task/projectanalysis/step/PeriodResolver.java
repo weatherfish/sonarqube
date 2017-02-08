@@ -72,7 +72,7 @@ public class PeriodResolver {
     }
     Period period = resolve(propertyValue);
     if (period == null && StringUtils.isNotBlank(propertyValue)) {
-      LOG.debug("Property " + LEAK_PERIOD + 1 + " is not valid: " + propertyValue);
+      LOG.debug("Property " + LEAK_PERIOD + " is not valid: " + propertyValue);
     }
     return period;
   }
@@ -204,6 +204,6 @@ public class PeriodResolver {
   }
 
   private static String getPropertyValue(Settings settings) {
-    return settings.getString(LEAK_PERIOD + 1);
+    return settings.getString(LEAK_PERIOD);
   }
 }
